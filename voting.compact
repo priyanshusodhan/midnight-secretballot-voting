@@ -2,21 +2,34 @@ pragma language_version 0.15;
 
 import CompactStandardLibrary;
 
-// Public state - vote tallies (visible on blockchain)
 export ledger yesVotes: Counter;
 export ledger noVotes: Counter;
+export ledger totalVoters: Counter;
 
-// Initialize voting with zero votes
+export ledger hasVoted: Map<String, Bool>;
+
 export circuit initVoting(): [] {
   yesVotes.reset();
   noVotes.reset();
+  totalVoters.reset();
 }
 
-// Cast a private vote - choice is Witness (stays on your device)
-export circuit castVote(choice: Witness<Bool>): [] {
+export circuit castVote(
+  choice: Witness<Bool>,
+  voterId: Witness<String>
+): [] {
+  assert(!hasVoted.get(voterId.value).unwrapOr(false));
+  
   if (choice.value) {
     yesVotes.increment(1);
   } else {
     noVotes.increment(1);
   }
+  
+  hasVoted.set(voterId.value, true);
+  totalVoters.increment(1);
+}
+
+export query hasUserVoted(voterId: String): Bool {
+  return hasVoted.get(voterId).unwrapOr(false);
 }

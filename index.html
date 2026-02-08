@@ -1,80 +1,509 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>SecretBallot - Midnight Voting</title>
+    <title>SecretBallot - Full Stack ZK Voting</title>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
-            font-family: 'SF Pro', system-ui, sans-serif;
-            max-width: 600px;
-            margin: 50px auto;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
             padding: 20px;
-            background: #1e1e1e;
             color: #ffffff;
         }
+        
         .container {
-            background: #2d2d2d;
-            padding: 30px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            max-width: 900px;
+            margin: 0 auto;
         }
-        button {
-            padding: 15px 30px;
-            margin: 10px;
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            animation: fadeInDown 0.8s ease;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        
+        .api-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(56, 239, 125, 0.2);
+            padding: 6px 16px;
+            border-radius: 16px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #38ef7d;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        h1 {
+            font-size: 48px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .subtitle {
+            font-size: 18px;
+            opacity: 0.9;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 40px;
+            margin-bottom: 30px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+            animation: fadeInUp 0.8s ease;
+        }
+        
+        .voter-section {
+            margin-bottom: 30px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 10px;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        input {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 12px;
+            background: rgba(255,255,255,0.1);
+            color: white;
             font-size: 16px;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
             transition: all 0.3s;
         }
-        .yes-btn {
-            background: #34c759;
-            color: white;
+        
+        input::placeholder {
+            color: rgba(255,255,255,0.6);
         }
-        .no-btn {
-            background: #ff3b30;
-            color: white;
+        
+        input:focus {
+            outline: none;
+            border-color: rgba(255,255,255,0.8);
+            background: rgba(255,255,255,0.2);
         }
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        
+        .voting-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
         }
-        .results {
-            margin-top: 30px;
+        
+        button {
             padding: 20px;
-            background: #3a3a3a;
-            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 1px;
         }
-        .privacy-badge {
-            background: #5e5ce6;
-            padding: 10px 20px;
+        
+        .yes-btn {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(56, 239, 125, 0.4);
+        }
+        
+        .yes-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(56, 239, 125, 0.6);
+        }
+        
+        .no-btn {
+            background: linear-gradient(135deg, #eb3349 0%, #f45c43 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(235, 51, 73, 0.4);
+        }
+        
+        .no-btn:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(235, 51, 73, 0.6);
+        }
+        
+        .refresh-btn {
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            color: white;
+            width: 100%;
+            box-shadow: 0 4px 15px rgba(79, 172, 254, 0.4);
+        }
+        
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none !important;
+        }
+        
+        .results {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 20px;
+            margin: 30px 0;
+        }
+        
+        .result-box {
+            background: rgba(255,255,255,0.1);
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            border: 2px solid rgba(255,255,255,0.2);
+        }
+        
+        .result-label {
+            font-size: 14px;
+            opacity: 0.8;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        
+        .result-value {
+            font-size: 36px;
+            font-weight: 700;
+            color: #fff;
+        }
+        
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            text-align: center;
+            font-weight: 600;
+            animation: slideIn 0.3s ease;
+        }
+        
+        .status-success {
+            background: rgba(56, 239, 125, 0.3);
+            border: 2px solid #38ef7d;
+        }
+        
+        .status-error {
+            background: rgba(235, 51, 73, 0.3);
+            border: 2px solid #eb3349;
+        }
+        
+        .status-info {
+            background: rgba(79, 172, 254, 0.3);
+            border: 2px solid #4facfe;
+        }
+        
+        .tech-stack {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-top: 20px;
+        }
+        
+        .tech-badge {
+            background: rgba(255,255,255,0.2);
+            padding: 8px 16px;
             border-radius: 20px;
-            display: inline-block;
-            margin-bottom: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-top: 20px;
+        }
+        
+        .stat-item {
+            background: rgba(255,255,255,0.1);
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        
+        .stat-label {
+            opacity: 0.7;
+            margin-bottom: 5px;
+        }
+        
+        .stat-value {
+            font-size: 20px;
+            font-weight: 700;
+        }
+        
+        @keyframes fadeInDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="privacy-badge">🔒 Zero-Knowledge Voting</div>
-        <h1>SecretBallot</h1>
-        <p>Your vote is computed locally. Only the tally goes on-chain.</p>
-        
-        <div>
-            <button class="yes-btn" onclick="vote(true)">Vote YES ✓</button>
-            <button class="no-btn" onclick="vote(false)">Vote NO ✗</button>
+        <div class="header">
+            <div class="badge">
+                🔒 Zero-Knowledge Voting System
+                <span class="api-status">
+                    <span class="status-dot"></span>
+                    API Connected
+                </span>
+            </div>
+            <h1>SecretBallot</h1>
+            <p class="subtitle">Full-Stack Privacy. Backend-Verified. Blockchain-Secured.</p>
+            <div class="tech-stack">
+                <span class="tech-badge">Node.js API</span>
+                <span class="tech-badge">Midnight Blockchain</span>
+                <span class="tech-badge">ZK-SNARKs</span>
+                <span class="tech-badge">MongoDB Analytics</span>
+            </div>
         </div>
-        
-        <div class="results" id="results">
-            <h3>Current Results</h3>
-            <p>Yes: <span id="yesCount">0</span></p>
-            <p>No: <span id="noCount">0</span></p>
+
+        <div class="card">
+            <div class="voter-section">
+                <label>Voter ID (Verified by Backend)</label>
+                <input type="text" id="voterId" placeholder="Enter your unique voter ID (e.g., voter_123)" />
+            </div>
+
+            <div id="statusMessage"></div>
+
+            <div class="voting-buttons">
+                <button class="yes-btn" onclick="vote(true)" id="yesBtn">
+                    ✓ Vote YES
+                </button>
+                <button class="no-btn" onclick="vote(false)" id="noBtn">
+                    ✗ Vote NO
+                </button>
+            </div>
+
+            <div class="results">
+                <div class="result-box">
+                    <div class="result-label">Yes Votes</div>
+                    <div class="result-value" id="yesCount">--</div>
+                </div>
+                <div class="result-box">
+                    <div class="result-label">No Votes</div>
+                    <div class="result-value" id="noCount">--</div>
+                </div>
+                <div class="result-box">
+                    <div class="result-label">Total Voters</div>
+                    <div class="result-value" id="totalCount">--</div>
+                </div>
+            </div>
+
+            <button class="refresh-btn" onclick="getResults()">
+                🔄 Refresh Results from Server
+            </button>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-label">Last Transaction ID</div>
+                    <div class="stat-value" id="lastTxId">--</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-label">Proof Verification Time</div>
+                    <div class="stat-value" id="verificationTime">--</div>
+                </div>
+            </div>
         </div>
-        
-        <button onclick="getResults()" style="background: #007aff; color: white;">
-            Refresh Results
-        </button>
     </div>
 
-    <script src="voting-client.js"></script>
+    <script>
+        const API_URL = 'http://localhost:3000/api';
+
+        // Generate ZK-Proof (simulated)
+        function generateZKProof(voterId, choice) {
+            // In production, this would use actual SNARK library
+            const timestamp = Date.now();
+            const randomness = Math.random().toString(36).substring(2);
+            return `zkp_${timestamp}_${randomness}_${voterId.length}_${choice}`;
+        }
+
+        function showMessage(message, type) {
+            const messageDiv = document.getElementById('statusMessage');
+            messageDiv.className = `status-message status-${type}`;
+            messageDiv.textContent = message;
+            
+            setTimeout(() => {
+                messageDiv.style.opacity = '0';
+                setTimeout(() => {
+                    messageDiv.textContent = '';
+                    messageDiv.style.opacity = '1';
+                }, 300);
+            }, 5000);
+        }
+
+        async function vote(choice) {
+            const voterIdInput = document.getElementById('voterId');
+            const voterId = voterIdInput.value.trim();
+            
+            if (!voterId) {
+                showMessage('⚠️ Please enter your Voter ID first!', 'error');
+                voterIdInput.focus();
+                return;
+            }
+
+            const buttons = document.querySelectorAll('button');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            try {
+                showMessage('🔐 Generating Zero-Knowledge Proof...', 'info');
+                
+                // Generate ZK-Proof
+                const zkProof = generateZKProof(voterId, choice);
+                console.log('📝 Generated ZK-Proof:', zkProof);
+                
+                // Submit to backend
+                showMessage('📡 Submitting to backend API...', 'info');
+                
+                const response = await fetch(`${API_URL}/vote`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Session-ID': sessionStorage.getItem('sessionId') || generateSessionId()
+                    },
+                    body: JSON.stringify({
+                        voterId,
+                        choice,
+                        zkProof
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    throw new Error(data.error || 'Vote submission failed');
+                }
+
+                // Show success
+                showMessage(
+                    `✅ ${data.message} TX: ${data.data.transactionId.substring(0, 16)}...`, 
+                    'success'
+                );
+
+                // Update stats
+                document.getElementById('lastTxId').textContent = 
+                    data.data.transactionId.substring(0, 20) + '...';
+                document.getElementById('verificationTime').textContent = 
+                    data.data.verificationTime;
+
+                console.log('✅ Vote Response:', data);
+                
+                // Refresh results
+                await getResults();
+                
+                // Clear input
+                voterIdInput.value = '';
+                
+            } catch (error) {
+                console.error('❌ Vote Error:', error);
+                showMessage(`❌ ${error.message}`, 'error');
+            } finally {
+                buttons.forEach(btn => btn.disabled = false);
+            }
+        }
+
+        async function getResults() {
+            try {
+                const response = await fetch(`${API_URL}/votes`);
+                const data = await response.json();
+
+                if (data.success) {
+                    document.getElementById('yesCount').textContent = data.data.yesVotes;
+                    document.getElementById('noCount').textContent = data.data.noVotes;
+                    document.getElementById('totalCount').textContent = data.data.totalVoters;
+                }
+            } catch (error) {
+                console.error('❌ Failed to fetch results:', error);
+                showMessage('⚠️ Could not connect to backend API', 'error');
+            }
+        }
+
+        function generateSessionId() {
+            const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            sessionStorage.setItem('sessionId', sessionId);
+            return sessionId;
+        }
+
+        // Check API health on load
+        async function checkAPIHealth() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                console.log('✅ API Health:', data);
+            } catch (error) {
+                console.error('❌ API not reachable. Make sure backend is running on port 3000');
+                showMessage('⚠️ Backend API offline. Start server with: node server/server.js', 'error');
+            }
+        }
+
+        // Initialize
+        window.addEventListener('load', () => {
+            checkAPIHealth();
+            getResults();
+            console.log('🚀 SecretBallot Full-Stack Application Loaded!');
+            console.log('📡 Backend API:', API_URL);
+        });
+    </script>
 </body>
 </html>
