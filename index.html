@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SecretBallot - Midnight Voting</title>
+    <style>
+        body {
+            font-family: 'SF Pro', system-ui, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1e1e1e;
+            color: #ffffff;
+        }
+        .container {
+            background: #2d2d2d;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        button {
+            padding: 15px 30px;
+            margin: 10px;
+            font-size: 16px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .yes-btn {
+            background: #34c759;
+            color: white;
+        }
+        .no-btn {
+            background: #ff3b30;
+            color: white;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+        }
+        .results {
+            margin-top: 30px;
+            padding: 20px;
+            background: #3a3a3a;
+            border-radius: 8px;
+        }
+        .privacy-badge {
+            background: #5e5ce6;
+            padding: 10px 20px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="privacy-badge">🔒 Zero-Knowledge Voting</div>
+        <h1>SecretBallot</h1>
+        <p>Your vote is computed locally. Only the tally goes on-chain.</p>
+        
+        <div>
+            <button class="yes-btn" onclick="vote(true)">Vote YES ✓</button>
+            <button class="no-btn" onclick="vote(false)">Vote NO ✗</button>
+        </div>
+        
+        <div class="results" id="results">
+            <h3>Current Results</h3>
+            <p>Yes: <span id="yesCount">0</span></p>
+            <p>No: <span id="noCount">0</span></p>
+        </div>
+        
+        <button onclick="getResults()" style="background: #007aff; color: white;">
+            Refresh Results
+        </button>
+    </div>
+
+    <script src="voting-client.js"></script>
+</body>
+</html>

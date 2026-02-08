@@ -1,0 +1,19 @@
+@0.1.0 language_version;
+
+ledger VotingLedger {
+    yesVotes: Integer;
+    noVotes: Integer;
+}
+
+export circuit initVoting(): Void {
+    VotingLedger.yesVotes = 0;
+    VotingLedger.noVotes = 0;
+}
+
+export circuit castVote(choice: Witness<Boolean>): Void {
+    if (choice.value) {
+        VotingLedger.yesVotes = VotingLedger.yesVotes + 1;
+    } else {
+        VotingLedger.noVotes = VotingLedger.noVotes + 1;
+    }
+}
