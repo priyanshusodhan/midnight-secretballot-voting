@@ -1,33 +1,55 @@
-# SecretBallot - Midnight Blockchain Bootcamp Project #21
+# 🗳️ SecretBallot - Privacy-Focused Voting
 
-## The Privacy Problem We Solve
-Traditional blockchain voting exposes every vote publicly. SecretBallot uses Zero-Knowledge proofs to keep votes private while maintaining verifiable results.
+> **Midnight Bootcamp Project #21** - Zero-Knowledge Proofs for private voting with public verification
 
-## How It Works
-1. **Local Computation**: Vote choice stays on your device
-2. **ZK-Proof Generation**: Mathematical proof created locally
-3. **On-Chain Verification**: Only the tally updates publicly
+## 🎯 The Problem
 
-## Technology Stack
-- Midnight Blockchain
-- Compact Language
-- Zero-Knowledge Proofs
+Traditional blockchain voting is completely public - everyone sees how you voted.
 
-## Running the Project
-```bash
-npm install
-npm run compile
-open index.html
+## ✅ Our Solution
+
+**SecretBallot** uses Zero-Knowledge Proofs:
+- ✅ Private individual votes (Witness<Bool>)
+- ✅ Public verifiable results (Ledger)
+- ✅ Cryptographic proof without disclosure
+
+## 🔐 Core Technology
+```compact
+export circuit castVote(choice: Witness<Bool>): [] {
+  if (choice.value) {
+    yesVotes.increment(1);
+  } else {
+    noVotes.increment(1);
+  }
+}
 ```
 
-## Key Features
-- ✅ Private voting (Witness<boolean>)
-- ✅ Public verifiable tallies
-- ✅ No voter coercion possible
-- ✅ 100% transparent results
+The `Witness<Bool>` keeps your vote on **your device only**. The blockchain only sees the proof and updates the public tally.
 
-## Bootcamp Requirements Met
-- [x] Uses Witness for selective disclosure
-- [x] Implements shielded state
-- [x] Demonstrates ZK-proof generation
-- [x] Public ledger for verification
+## 📚 How It Works
+
+1. **You vote locally** - Your choice stays on your MacBook
+2. **ZK-Proof generated** - Mathematical proof created
+3. **Network verifies** - Proof is checked, tally updated
+4. **Privacy preserved** - No one knows your vote
+
+## 🎓 Bootcamp Requirements
+
+- ✅ Uses `Witness` for selective disclosure
+- ✅ Implements shielded state
+- ✅ Demonstrates ZK-proof generation
+- ✅ Public ledger for verification
+
+## 📖 Documentation
+
+See [BOOTCAMP_SUBMISSION.md](./BOOTCAMP_SUBMISSION.md) for complete technical explanation.
+
+## 👨‍💻 Author
+
+**Priyanshu Sodhan**  
+First Year CSE Student - IIIT NR  
+Midnight Blockchain Bootcamp 2026
+
+---
+
+*Protecting democracy, one ZK-proof at a time* 🔒

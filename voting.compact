@@ -1,19 +1,22 @@
-@0.1.0 language_version;
+pragma language_version 0.15;
 
-ledger VotingLedger {
-    yesVotes: Integer;
-    noVotes: Integer;
+import CompactStandardLibrary;
+
+// Public state - vote tallies (visible on blockchain)
+export ledger yesVotes: Counter;
+export ledger noVotes: Counter;
+
+// Initialize voting with zero votes
+export circuit initVoting(): [] {
+  yesVotes.reset();
+  noVotes.reset();
 }
 
-export circuit initVoting(): Void {
-    VotingLedger.yesVotes = 0;
-    VotingLedger.noVotes = 0;
-}
-
-export circuit castVote(choice: Witness<Boolean>): Void {
-    if (choice.value) {
-        VotingLedger.yesVotes = VotingLedger.yesVotes + 1;
-    } else {
-        VotingLedger.noVotes = VotingLedger.noVotes + 1;
-    }
+// Cast a private vote - choice is Witness (stays on your device)
+export circuit castVote(choice: Witness<Bool>): [] {
+  if (choice.value) {
+    yesVotes.increment(1);
+  } else {
+    noVotes.increment(1);
+  }
 }
