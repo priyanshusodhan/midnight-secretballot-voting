@@ -1,0 +1,233 @@
+const express = require('express');
+const cors = require('cors');
+const mongoose = require('mongoose');
+require('dotenv').config();
+
+const app = express();
+
+// Middleware
+app.use(cors());
+app.use(express.json());
+app.use(express.static('.'));  // Serve static files (index.html, etc.)
+
+// MongoDB Schema for Vote Analytics
+const voteAnalyticsSchema = new mongoose.Schema({
+    timestamp: { type: Date, default: Date.now },
+    voteType: { type: String, enum: ['yes', 'no'] },
+    sessionId: String,
+    zkProofHash: String,
+    verificationTime: Number
+});
+
+const VoteAnalytics = mongoose.model('VoteAnalytics', voteAnalyticsSchema);
+
+// In-memory storage (simulating blockchain state)
+let blockchainState = {
+    yesVotes: 0,
+    noVotes: 0,
+    totalVoters: 0,
+    votedUsers: new Set(),
+    voteHistory: []
+};
+
+// ============= API ENDPOINTS =============
+
+// 1. Health Check
+app.get('/api/health', (req, res) => {
+    res.json({
+        status: 'ok',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime()
+    });
+});
+
+// 2. Get Current Vote Results
+app.get('
+/api/votes', (req, res) => {
+    res.json({
+        yesVotes: blockchainState.yesVotes,
+        noVotes: blockchainState.noVotes,
+        totalVoters: blockchainState.totalVoters,
+        timestamp: new Date().toISOString()
+    });
+});
+
+// 3. Submit Vote with ZK-Proof
+app.post('/api/vote', async (req, res) => {
+    try {
+        const { voterId, choice, zkProof } = req.body;
+
+        // Validation
+        if (!voterId || choice === undefined || !zkProof) {
+            return res.status(400).json({
+                success: false,
+                error: 'Missing required fields: voterId, choice, zkProof'
+            });
+        }
+
+        // Check if voter already voted
+        if (blockchainState.votedUsers.has(voterId)) {
+            return res.status(403).json({
+                success: false,
+                error: 'Voter has already voted'
+            });
+        }
+
+        // Simulate ZK-Proof verification (in real app, this would verify actual proof)
+        const isProofValid = zkProof.startsWith('zkp_');
+        if (!isProofValid) {
+            return res.status(400).json({
+                success: false,
+                error: 'Invalid ZK-proof'
+            });
+        }
+
+        // Record vote
+        if (choice === true || choice === 'yes') {
+            blockchainState.yesVotes++;
+        } else {
+            blockchainState.noVotes++;
+        }
+
+        blockchainState.totalVoters++;
+        blockchainState.votedUsers.add(voterId);
+        
+        const voteRecord = {
+            voteId: `vote_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            timestamp: new Date().toISOString(),
+            zkProofHash: zkProof.substring(0, 20) + '...'
+        };
+        
+        blockchainState.voteHistory.push(voteRecord);
+
+        // Try to save to MongoDB (optional - works without it)
+        try {
+            if (mongoose.connection.readyState === 1) {
+                await VoteAnalytics.create({
+                    voteType: choice ? 'yes' : 'no',
+                    sessionId: voterId,
+                    zkProofHash: zkProof,
+                    verificationTime: Math.random() * 100
+                });
+            }
+        } catch (dbError) {
+            console.log('MongoDB not available, continuing without database');
+        }
+
+        res.json({
+            success: true,
+            voteId: voteRecord.voteId,
+            timestamp: voteRecord.timestamp,
+            currentResults: {
+                yesVotes: blockchainState.yesVotes,
+                noVotes: blockchainState.noVotes,
+                totalVoters: blockchainState.totalVoters
+            }
+        });
+
+    } catch (error) {
+        console.error('Vote submission error:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Internal server error'
+        });
+    }
+});
+
+// 4. Check if Voter Already Voted
+app.post('/api/check-voter', (req, res) => {
+    const { voterId } = req.body;
+
+    if (!voterId) {
+        return res.status(400).json({
+            error: 'voterId is required'
+        });
+    }
+
+    res.json({
+        hasVoted: blockchainState.votedUsers.has(voterId),
+        voterId: voterId
+    });
+});
+
+// 5. Get Voting Statistics
+app.get('/api/stats', (req, res) => {
+    const yesPercentage = blockchainState.totalVoters > 0
+        ? ((blockchainState.yesVotes / blockchainState.totalVoters) * 100).toFixed(1)
+        : 0;
+    
+    const noPercentage = blockchainState.totalVoters > 0
+        ? ((blockchainState.noVotes / blockchainState.totalVoters) * 100).toFixed(1)
+        : 0;
+
+    res.json({
+        totalVotes: blockchainState.totalVoters,
+        yesVotes: blockchainState.yesVotes,
+        noVotes: blockchainState.noVotes,
+        yesPercentage: parseFloat(yesPercentage),
+        noPercentage: parseFloat(noPercentage),
+        recentVotes: blockchainState.voteHistory.slice(-10).reverse(),
+        timestamp: new Date().toISOString()
+    });
+});
+
+// 6. Admin: Reset Voting (for demo purposes)
+app.post('/api/admin/reset', (req, res) => {
+    blockchainState = {
+        yesVotes: 0,
+        noVotes: 0,
+        totalVoters: 0,
+        votedUsers: new Set(),
+        voteHistory: []
+    };
+
+    res.json({
+        success: true,
+        message: 'Voting system reset successfully',
+        timestamp: new Date().toISOString()
+    });
+});
+
+// MongoDB Connection (optional - works without it)
+const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/secretballot';
+
+mongoose.connect(MONGODB_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => {
+    console.log('✓ MongoDB connected');
+})
+.catch((err) => {
+    console.log('⚠ Running without MongoDB (this is fine for demo)');
+});
+
+// Start Server
+const PORT = process.env.PORT || 3000;
+
+app.listen(PORT, () => {
+    console.log(`
+╔════════════════════════════════════════════╗
+║   SecretBallot Backend API Server         ║
+╚════════════════════════════════════════════╝
+
+Status: RUNNING
+Port: ${PORT}
+Privacy: Zero-Knowledge Proofs Enabled
+Anti-fraud: Double-Voting Prevention Active
+
+🔗 API Endpoints:
+  • GET  /api/health         - Health check
+  • GET  /api/votes          - Get current results
+  • POST /api/vote           - Submit vote with ZK
+  • POST /api/check-voter    - Check voting status
+  • GET  /api/stats          - Get statistics
+  • POST /api/admin/reset    - Reset voting
+
+✓ API ready
+  Open terminal, go to your project
+  Then run: open index.html
+
+  OR access via: http://localhost:${PORT}
+`);
+});

@@ -368,142 +368,88 @@
         </div>
     </div>
 
-    <script>
-        const API_URL = 'http://localhost:3000/api';
+   
+<script>
+const API_URL = 'http://localhost:3000/api';
 
-        // Generate ZK-Proof (simulated)
-        function generateZKProof(voterId, choice) {
-            // In production, this would use actual SNARK library
-            const timestamp = Date.now();
-            const randomness = Math.random().toString(36).substring(2);
-            return `zkp_${timestamp}_${randomness}_${voterId.length}_${choice}`;
-        }
+// Show status message
+function showMessage(message, type) {
+    const messageDiv = document.getElementById('statusMessage');
+    messageDiv.className = `status-message status-${type}`;
+    messageDiv.textContent = message;
+}
 
-        function showMessage(message, type) {
-            const messageDiv = document.getElementById('statusMessage');
-            messageDiv.className = `status-message status-${type}`;
-            messageDiv.textContent = message;
-            
-            setTimeout(() => {
-                messageDiv.style.opacity = '0';
-                setTimeout(() => {
-                    messageDiv.textContent = '';
-                    messageDiv.style.opacity = '1';
-                }, 300);
-            }, 5000);
-        }
+// Vote Function
+async function vote(isYes) {
+    const voterIdInput = document.getElementById('voterId');
+    const voterId = voterIdInput.value.trim();
 
-        async function vote(choice) {
-            const voterIdInput = document.getElementById('voterId');
-            const voterId = voterIdInput.value.trim();
-            
-            if (!voterId) {
-                showMessage('⚠️ Please enter your Voter ID first!', 'error');
-                voterIdInput.focus();
-                return;
-            }
+    if (!voterId) {
+        showMessage('⚠️ Please enter Voter ID', 'error');
+        return;
+    }
 
-            const buttons = document.querySelectorAll('button');
-            buttons.forEach(btn => btn.disabled = true);
-            
-            try {
-                showMessage('🔐 Generating Zero-Knowledge Proof...', 'info');
-                
-                // Generate ZK-Proof
-                const zkProof = generateZKProof(voterId, choice);
-                console.log('📝 Generated ZK-Proof:', zkProof);
-                
-                // Submit to backend
-                showMessage('📡 Submitting to backend API...', 'info');
-                
-                const response = await fetch(`${API_URL}/vote`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-Session-ID': sessionStorage.getItem('sessionId') || generateSessionId()
-                    },
-                    body: JSON.stringify({
-                        voterId,
-                        choice,
-                        zkProof
-                    })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.error || 'Vote submission failed');
-                }
-
-                // Show success
-                showMessage(
-                    `✅ ${data.message} TX: ${data.data.transactionId.substring(0, 16)}...`, 
-                    'success'
-                );
-
-                // Update stats
-                document.getElementById('lastTxId').textContent = 
-                    data.data.transactionId.substring(0, 20) + '...';
-                document.getElementById('verificationTime').textContent = 
-                    data.data.verificationTime;
-
-                console.log('✅ Vote Response:', data);
-                
-                // Refresh results
-                await getResults();
-                
-                // Clear input
-                voterIdInput.value = '';
-                
-            } catch (error) {
-                console.error('❌ Vote Error:', error);
-                showMessage(`❌ ${error.message}`, 'error');
-            } finally {
-                buttons.forEach(btn => btn.disabled = false);
-            }
-        }
-
-        async function getResults() {
-            try {
-                const response = await fetch(`${API_URL}/votes`);
-                const data = await response.json();
-
-                if (data.success) {
-                    document.getElementById('yesCount').textContent = data.data.yesVotes;
-                    document.getElementById('noCount').textContent = data.data.noVotes;
-                    document.getElementById('totalCount').textContent = data.data.totalVoters;
-                }
-            } catch (error) {
-                console.error('❌ Failed to fetch results:', error);
-                showMessage('⚠️ Could not connect to backend API', 'error');
-            }
-        }
-
-        function generateSessionId() {
-            const sessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-            sessionStorage.setItem('sessionId', sessionId);
-            return sessionId;
-        }
-
-        // Check API health on load
-        async function checkAPIHealth() {
-            try {
-                const response = await fetch(`${API_URL}/health`);
-                const data = await response.json();
-                console.log('✅ API Health:', data);
-            } catch (error) {
-                console.error('❌ API not reachable. Make sure backend is running on port 3000');
-                showMessage('⚠️ Backend API offline. Start server with: node server/server.js', 'error');
-            }
-        }
-
-        // Initialize
-        window.addEventListener('load', () => {
-            checkAPIHealth();
-            getResults();
-            console.log('🚀 SecretBallot Full-Stack Application Loaded!');
-            console.log('📡 Backend API:', API_URL);
+    try {
+        const response = await fetch(`${API_URL}/vote`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                voterId,
+                choice: isYes,
+                zkProof: "demo_proof_" + Date.now()
+            })
         });
-    </script>
+
+        const data = await response.json();
+
+        if (!response.ok) {
+            throw new Error(data.error || 'Vote failed');
+        }
+
+        showMessage('✅ Vote submitted successfully! TX: ' + data.transactionId, 'success');
+
+        // Update transaction info
+        document.getElementById('lastTxId').textContent = data.transactionId.substring(0, 12) + '...';
+        document.getElementById('verificationTime').textContent = data.verificationTime;
+
+        // Refresh results from server
+        await getResults();
+        
+        // Clear input
+        voterIdInput.value = '';
+
+    } catch (error) {
+        console.error(error);
+        showMessage('❌ ' + error.message, 'error');
+    }
+}
+
+// Get Results
+async function getResults() {
+    try {
+        const response = await fetch(`${API_URL}/votes`);
+        const data = await response.json();
+
+        document.getElementById('yesCount').textContent = data.yesVotes;
+        document.getElementById('noCount').textContent = data.noVotes;
+        document.getElementById('totalCount').textContent = data.totalVoters;
+
+        showMessage('📊 Results updated from server', 'info');
+
+    } catch (error) {
+        console.error(error);
+        showMessage('⚠️ Could not connect to backend', 'error');
+    }
+}
+
+// On Page Load
+window.addEventListener('load', () => {
+    getResults();
+});
+</script>
+
+
 </body>
 </html>

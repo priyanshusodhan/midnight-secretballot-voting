@@ -1,26 +1,27 @@
 # Dependencies
 node_modules/
-package-lock.json
 
-# Environment variables
+# Environment
 .env
 .env.local
 
-# Build outputs
-dist/
-build/
-boilerplate/contract/src/managed/
-
-# MacOS
-.DS_Store
-
 # Logs
 *.log
-npm-debug.log*
+logs/
+
+# Build
+build/
+dist/
 
 # IDE
 .vscode/
 .idea/
+*.swp
 
-# Midnight specific
-contract/managed/
+# OS
+.DS_Store
+Thumbs.db
+
+# Midnight
+.midnight/
+midnight-data/
