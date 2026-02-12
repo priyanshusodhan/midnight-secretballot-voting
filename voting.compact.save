@@ -1,0 +1,13 @@
+pragma language_version 0.28;
+
+import CompactStandardLibrary;
+
+export ledger votes: Map<Uint<8>, Uint<32>>;
+
+export circuit vote(candidate: Uint<8>): ()
+    let current = votes.get(candidate).unwrap_or(0);
+    votes.insert(candidate, current + 1);
+
+export circuit get_votes(candidate: Uint<8>): Uint<32>
+    votes.get(candidate).unwrap_or(0);
+
